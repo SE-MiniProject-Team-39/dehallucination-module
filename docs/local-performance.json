@@ -1,0 +1,10 @@
+{
+  "mode": "offline snapshot, warmed cache, SQLite, one worker",
+  "sequential_samples": 10,
+  "sequential_median_ms": 22.82,
+  "sequential_p95_ms": 26.91,
+  "concurrent_requests": 20,
+  "concurrent_max_ms": 437.08,
+  "all_concurrent_http_200": true,
+  "note": "Local warmed-cache measurements do not establish live-source latency or production queueing SLAs."
+}

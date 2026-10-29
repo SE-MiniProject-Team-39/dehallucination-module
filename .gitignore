@@ -1,0 +1,12 @@
+.venv/
+.tools/
+__pycache__/
+.pytest_cache/
+*.db
+.env
+node_modules/
+frontend/dist/
+*.pyc
+frontend/test-results/
+frontend/playwright-report/
+.repo/
