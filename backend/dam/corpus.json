@@ -1,0 +1,9 @@
+[
+  {"subject":"France","relation":"capital","value":"Paris","statement":"The capital of France is Paris.","url":"https://www.wikidata.org/wiki/Q142","property":"P36","entity":"Q142"},
+  {"subject":"India","relation":"capital","value":"New Delhi","statement":"The capital of India is New Delhi.","url":"https://www.wikidata.org/wiki/Q668","property":"P36","entity":"Q668"},
+  {"subject":"Japan","relation":"capital","value":"Tokyo","statement":"The capital of Japan is Tokyo.","url":"https://www.wikidata.org/wiki/Q17","property":"P36","entity":"Q17"},
+  {"subject":"Australia","relation":"capital","value":"Canberra","statement":"The capital of Australia is Canberra.","url":"https://www.wikidata.org/wiki/Q408","property":"P36","entity":"Q408"},
+  {"subject":"Germany","relation":"capital","value":"Berlin","statement":"The capital of Germany is Berlin.","url":"https://www.wikidata.org/wiki/Q183","property":"P36","entity":"Q183"},
+  {"subject":"Hamlet","relation":"author","value":"William Shakespeare","statement":"Hamlet was written by William Shakespeare.","url":"https://www.wikidata.org/wiki/Q41567","property":"P50","entity":"Q41567"},
+  {"subject":"Earth","relation":"orbits","value":"Sun","statement":"Earth orbits the Sun.","url":"https://www.wikidata.org/wiki/Q2","property":"P397","entity":"Q2"}
+]

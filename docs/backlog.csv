@@ -1,0 +1,15 @@
+id,title,requirements,story_points,sprint,proposed_owner,acceptance
+US-01,Input validation and claim spans,REQ-1 REQ-2 REQ-3 REQ-4,5,1,Chinmay N S,Accept 10000 characters and retain exact offsets; exclude nonfacts; empty list when none
+US-02,Trusted graph and text adapters,REQ-5 REQ-6 REQ-7,8,1,Badri Harinivas,Query graph and corpus; four verdicts; cite every supported or contradicted claim
+US-03,Source deadlines and graceful degradation,REQ-8,3,1,Badri Harinivas,Timeout one source without preventing other evidence from returning
+US-04,Scoring flags and severity,REQ-9 REQ-10 REQ-11,5,1,Ashrit Nair,Bound scores to zero through one; apply configured threshold and aggregate severity
+US-05,Authenticated integration API,REQ-14 REQ-15 REQ-16,5,1,Aditya S,Hash bearer keys; expose OpenAPI; enforce key rate limit and Retry-After
+US-06,Dashboard verification workspace,REQ-17,5,1,Aditya S,Submit text and inspect color-coded claim evidence with explicit empty states
+US-07,Corrections with preserved original,REQ-12 REQ-13,3,2,Ashrit Nair,Only suggest a correction above alternative confidence 0.7; never rewrite original
+US-08,Reviewer override and approval,REQ-18,5,2,Chinmay N S,Store reviewer reason timestamp and original verdict; persist approval and audit
+US-09,Filtered analytics and history,REQ-19,5,2,Aditya S,Filter date and app/key; use effective overrides; show rates and report counts
+US-10,Admin source policy and access control,NFR security business rules,5,2,Ashrit Nair,Only administrators edit weights timeouts keys; log all configuration changes
+US-11,Claim cache and performance,NFR performance UC-4,5,2,Badri Harinivas,Reuse duplicates; invalidate on config; measure cached latency and 20-way concurrency
+US-12,Automated tests and CI review,NFR CI testability,5,1,Chinmay N S,Test on every PR; run static and dependency security checks; require human review
+US-13,PostgreSQL container and HTTPS deployment,NFR environment security,3,2,Aditya S,Persistent PostgreSQL; Docker build; document reverse-proxy TLS and secure cookies
+US-14,Documentation traceability and demos,Part-2 delivery,3,2,Chinmay N S,Reconcile deviations; map all requirements; record authentic sprint demos
