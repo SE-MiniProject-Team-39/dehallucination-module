@@ -70,9 +70,9 @@ Screenshots were captured by the Playwright browser run. The existing `docs/work
 
 ## Git and pull request readiness
 
-- Branch remains `badri/frontend-ui`; the reviewed changes are prepared for a branch commit.
+- Branch: `badri/frontend-ui`; commit `cf4237f` (`Fix Unicode verification input limits`) was pushed to origin.
 - No backend teammate files were modified. `git diff --check` is clean.
-- `gh` is unavailable, so GitHub issues and a PR could not be created. The two issue drafts above are ready for manual creation; add their URLs/IDs here once created.
+- `gh` is unavailable and the GitHub connection is not active in this session, so GitHub issues and a PR could not be created. The two issue drafts above are ready; add their URLs/IDs and link them from the PR once created.
 - Suggested PR title: `Align verification input limits with Unicode code points`
 - PR summary: Align the verifier's input counter and limit with the backend's 10,000-code-point contract; expand browser coverage for authentication errors, Unicode input boundaries, API failures, and mobile overflow; include current workflow screenshots. Build, browser workflow, npm audit, and diff checks pass. The browser runner's post-test shutdown hang and unavailable GitHub CLI remain limitations.
 
@@ -80,4 +80,4 @@ Screenshots were captured by the Playwright browser run. The existing `docs/work
 
 - Create FE-1 and FE-2 in GitHub and add their issue numbers/URLs here.
 - Investigate why Playwright's Windows process remains alive after the test reports success.
-- Review the local diff, then create the PR when GitHub CLI or an equivalent authenticated workflow is available. Nothing has been committed, pushed, or merged.
+- Open a PR from `badri/frontend-ui` into `main`, link the issues, and add the PR URL here when GitHub CLI or an equivalent connected workflow is available. The branch commit has been pushed; nothing has been merged.
