@@ -48,13 +48,13 @@ GitHub CLI (`gh`) is not installed in this environment, so no GitHub issue was c
 
 - Updated the Verify content field to count and cap input with `Array.from`, matching Python's Unicode code-point limit of 10,000. The submit handler also guards the same limit before making an API request.
 - Kept the existing code-point conversion for claim highlighting unchanged.
-- Expanded the Playwright workflow to cover invalid login, 5,001 emoji, truncation at 10,000 code points, a simulated 503 response, and mobile screenshot capture.
-- No backend code, dependencies, API contracts, or Git history were changed.
+- Expanded the Playwright workflow to cover invalid login, whitespace-only verification input, below-limit emoji input, an exact mixed BMP/non-BMP 10,000-code-point value, safe truncation above the limit, a simulated 503 response, and mobile overflow.
+- No backend code, dependencies, or API contracts were changed.
 
 ## Testing and checks
 
 - `npm.cmd run build`: passed with Vite 6.4.5; output includes 249.44 kB JavaScript and 16.99 kB CSS before compression. Re-run during this workflow also passed.
-- `DAM_BROWSER_CHANNEL=msedge npm.cmd run test:e2e`: **1 passed, 0 failed, 0 skipped**. Re-run during this workflow passed in 8.6 seconds. The workflow covered invalid and valid login, Unicode boundaries, failed and successful verification, all four verdict states, evidence/correction, override, approval, export, history filtering, analytics, settings, audit, 390-pixel overflow, and logout.
+- `DAM_BROWSER_CHANNEL=msedge npm.cmd run test:e2e`: **1 passed, 0 failed, 0 skipped**. Latest run passed in 6.8 seconds and exited normally. The workflow covered invalid and valid login, empty/whitespace and Unicode boundaries, failed and successful verification, all four verdict states, evidence/correction, override, approval, export, history filtering, analytics, settings, audit, 390-pixel overflow, and logout.
 - `npm.cmd audit --audit-level=moderate`: passed; 0 vulnerabilities.
 - `git diff --check`: passed.
 - Unit/component, lint, and type-check scripts are not configured in the frontend package. No backend pytest suite was run as part of this frontend change.
@@ -70,14 +70,13 @@ Screenshots were captured by the Playwright browser run. The existing `docs/work
 
 ## Git and pull request readiness
 
-- Branch: `badri/frontend-ui`; commit `cf4237f` (`Fix Unicode verification input limits`) was pushed to origin.
+- Branch: `badri/frontend-ui`; commits `cf4237f` (`Fix Unicode verification input limits`), `9ee5fe3` (`Record frontend branch push status`), and `75216e6` (`Cover verification input validation boundaries`) are pushed to origin.
 - No backend teammate files were modified. `git diff --check` is clean.
-- `gh` is unavailable and the GitHub connection is not active in this session, so GitHub issues and a PR could not be created. The two issue drafts above are ready; add their URLs/IDs and link them from the PR once created.
+- Add the created GitHub issue URLs/IDs here and link them from the PR. No issue numbers or PR URL are recorded in this report yet.
 - Suggested PR title: `Align verification input limits with Unicode code points`
-- PR summary: Align the verifier's input counter and limit with the backend's 10,000-code-point contract; expand browser coverage for authentication errors, Unicode input boundaries, API failures, and mobile overflow; include current workflow screenshots. Build, browser workflow, npm audit, and diff checks pass. The browser runner's post-test shutdown hang and unavailable GitHub CLI remain limitations.
+- PR summary: Align the verifier's input counter and limit with the backend's 10,000-code-point contract; expand browser coverage for authentication errors, Unicode input boundaries, API failures, and mobile overflow; include current workflow screenshots. Build, browser workflow, npm audit, and diff checks pass.
 
 ## Remaining manual tasks
 
 - Create FE-1 and FE-2 in GitHub and add their issue numbers/URLs here.
-- Investigate why Playwright's Windows process remains alive after the test reports success.
-- Open a PR from `badri/frontend-ui` into `main`, link the issues, and add the PR URL here when GitHub CLI or an equivalent connected workflow is available. The branch commit has been pushed; nothing has been merged.
+- Open a PR from `badri/frontend-ui` into `main`, link the issues, and add the PR URL here. The branch commits are pushed; nothing has been merged.
