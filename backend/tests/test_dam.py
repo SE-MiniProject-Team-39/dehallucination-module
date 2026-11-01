@@ -11,7 +11,7 @@ from backend.dam.extraction import extract, fallback_extract
 from backend.dam.main import create_app
 from backend.dam.models import ApiKey, Audit, Config
 from backend.dam.pipeline import score
-from backend.dam.security import hash_key
+from backend.dam.security import hash_key, hash_password, check_password
 from backend.dam.sources import CuratedSource, WikidataSource, WikipediaSource, evidence, lookup
 
 
@@ -283,3 +283,33 @@ def test_source_error_isolation():
 ])
 def test_templates_do_not_guess_negation_or_qualified_claims(text):
     assert asyncio.run(CuratedSource().query(text, None)) == []
+
+
+def test_password_hash_and_verification():
+    stored = hash_password('test-password')
+
+    assert check_password('test-password', stored) is True
+    assert check_password('wrong-password', stored) is False
+
+
+@pytest.mark.parametrize('stored', [
+    '',
+    'invalid-hash',
+    'salt$',
+    '$' + 'a' * 64,
+    'salt$' + 'g' * 64,
+    'salt$' + 'a' * 63,
+    'salt$' + 'a' * 64 + '$extra',
+])
+def test_check_password_rejects_malformed_hashes(stored):
+    assert check_password('test-password', stored) is False
+
+
+@pytest.mark.parametrize('password, stored', [
+    (None, 'salt$' + 'a' * 64),
+    (12345, 'salt$' + 'a' * 64),
+    ('test-password', None),
+    ('test-password', 12345),
+])
+def test_check_password_rejects_non_string_inputs(password, stored):
+    assert check_password(password, stored) is False
