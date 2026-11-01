@@ -78,6 +78,8 @@ async def extract(text, context=""):
                 start, end = span["start"], span["end"]
                 if type(start) is not int or type(end) is not int or not (last_end <= start < end <= len(text)):
                     raise ValueError("Invalid or overlapping LLM offsets")
+                if not text[start:end].strip():
+                    raise ValueError("LLM claim spans must contain non-whitespace text")
                 claims.append({"text": text[start:end], "start": start, "end": end})
                 last_end = end
             return claims, "llm"
