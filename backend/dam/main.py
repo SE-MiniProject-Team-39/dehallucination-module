@@ -199,7 +199,7 @@ def create_app(db_url=None, testing=False):
         except TimeoutError:
             from .extraction import fallback_extract
             report = summarize({'original_text': data.text, 'extractor': 'rule-based (request timeout)', 'mode': 'live' if live else 'offline snapshot', 'confidence_threshold': threshold,
-                'claims': [{**c, 'claim_id': str(uuid4()), 'verdict': 'Not-Checkable', 'confidence_score': 0.0, 'flagged': True,
+                'claims': [{**c, 'claim_id': str(uuid4()), 'verdict': 'Not-Checkable', 'confidence_score': 0.0, 'flagged': 0.0 < threshold,
                             'evidence': [], 'source_results': [], 'cached': False, 'suggested_correction': None, 'reason': 'Request deadline exceeded'} for c in fallback_extract(data.text)]})
         for claim in report['claims']:
             claim['automated_verdict'] = claim['verdict']
