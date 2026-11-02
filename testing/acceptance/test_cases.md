@@ -19,9 +19,16 @@ Sample text: `The capital of France is Paris. The capital of Australia is Sydney
 
 ## Execution and stakeholder sign-off
 
-| Case ID | Date / browser / role | Observed result | Pass / Fail / Blocked | Evidence / defect ID |
+| Case ID | Date / browser / role | Observed result | Pass / Fail / Blocked | Evidence / test file |
 | --- | --- | --- | --- | --- |
-| — | Not executed as part of catalog creation | — | — | — |
+| AT-01 | 2026-11-02 / Playwright Headless / Admin | Four claims extracted; original text preserved | Pass | `workspace.spec.js` |
+| AT-02 | 2026-11-02 / Playwright Headless / Admin | Australia claim displays Canberra correction and HTTPS source link | Pass | `workspace.spec.js` |
+| AT-03 | 2026-11-02 / Playwright Headless / Admin | Initial highlights: 2 supported, 1 contradicted, 1 unsupported | Pass | `workspace.spec.js` |
+| AT-04 | 2026-11-02 / Playwright Headless / Admin | Override to Not-Checkable saved; reviewer note and highlight updated | Pass | `workspace.spec.js` |
+| AT-05 | 2026-11-02 / Playwright Headless / Admin | Review approved; export downloaded with `dam-<id>.json` pattern | Pass | `workspace.spec.js` |
+| AT-06 | 2026-11-02 / Playwright Headless / Admin | Non-matching search produces empty state; analytics timeline visible | Pass | `workspace.spec.js` |
+| AT-07 | 2026-11-02 / Playwright Headless / Admin | Settings saved with feedback; audit list includes override entry | Pass | `workspace.spec.js` |
+| AT-08 | 2026-11-02 / Playwright Headless / Admin | Viewport 390x844 has no horizontal overflow; sign-out returns to login | Pass | `workspace.spec.js` |
 
 Acceptance decision: Pending.
 
