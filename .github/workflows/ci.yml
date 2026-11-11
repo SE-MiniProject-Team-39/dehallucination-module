@@ -15,7 +15,8 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.lock
       - run: pip install -r requirements.lock
-      - run: python -m pytest -q --junitxml=test-results.xml
+      - run: pip install pytest-cov==7.1.0
+      - run: python -m pytest -q --junitxml=test-results.xml --cov=backend/dam --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=85
       - run: pip install bandit pip-audit
       - run: bandit -r backend/dam sdk -ll
       - run: pip-audit -r requirements.lock
@@ -23,7 +24,9 @@ jobs:
         if: always()
         with:
           name: backend-test-results
-          path: test-results.xml
+          path: |
+            test-results.xml
+            coverage.xml
   dashboard:
     runs-on: ubuntu-latest
     defaults:
