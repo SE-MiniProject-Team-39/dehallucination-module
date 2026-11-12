@@ -1,9 +1,9 @@
 # Local verification results
 
-## Re-run — 11 November 2026 (after regression PRs #4–#7)
+## Re-run — 12 November 2026 (after merging main, including PR #16)
 
-- Backend: **66 passed**, 0 failed (up from 32: PRs #4–#7 added regression suites under `backend/tests/ashrit/`). JUnit output: [test-results.xml](test-results.xml).
-- Coverage of `backend/dam`: **92.75%** combined, 95.3% statements, 83.3% branches. CI gate at 85% passes. Details: [COVERAGE.md](COVERAGE.md).
+- Backend: **203 passed**, 0 failed. The suite grew from 32 (22 Oct) to 66 (PRs #4–#7) to 203 (PR #16 unit and integration suites). JUnit output: [test-results.xml](test-results.xml).
+- Coverage of `backend/dam` and `sdk`: **98.3%** combined (99.3% statements, 94.5% branches). The CI gate at 85% passes. Details: [COVERAGE.md](COVERAGE.md).
 - The browser, security and performance results below are from the 22 October run and were not repeated.
 
 ## Initial run — 22 October 2026

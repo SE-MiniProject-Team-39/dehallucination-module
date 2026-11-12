@@ -1,32 +1,41 @@
-# Code and branch coverage report — 11 November 2026
+# Code and branch coverage report — 12 November 2026
 
-Command (from the repository root, project virtual environment):
+This report covers the merged suite: the core regression tests (PRs #4–#7) plus the unit and integration suites from PR #16. The command, run from the repository root with the project virtual environment, is:
 
 ```
-python -m pytest -q --cov=backend/dam --cov-branch --cov-report=term-missing --cov-report=xml:docs/coverage.xml
+python -m pytest -q --cov=backend/dam --cov=sdk --cov-branch --cov-report=term-missing --cov-report=xml:docs/coverage.xml
 ```
 
-Tooling: pytest 9.1.1, pytest-cov 7.1.0, coverage.py 7.17.2, Python 3.11.9 (Windows). Result: **66 passed, 0 failed**. Machine-readable output: [coverage.xml](coverage.xml).
+Tooling: pytest 9.1.1, pytest-cov 7.1.0, coverage.py 7.17.2, Python 3.11.9 (Windows). Result: **203 passed, 0 failed**. Machine-readable output: [coverage.xml](coverage.xml). JUnit output: [test-results.xml](test-results.xml).
 
-| Module | Statements | Missed | Branches | Partial branches | Coverage |
+| Module | Statements | Missed | Branches | Partial | Coverage |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `extraction.py` | 64 | 1 | 34 | 2 | 97% |
-| `main.py` | 292 | 21 | 70 | 15 | 90% |
-| `models.py` | 60 | 0 | 2 | 1 | 98% |
-| `pipeline.py` | 68 | 1 | 16 | 2 | 96% |
-| `security.py` | 21 | 0 | 8 | 0 | 100% |
-| `sources.py` | 92 | 5 | 32 | 5 | 92% |
-| **Total** | **597** | **28** | **162** | **25** | **93%** |
+| `backend/dam/extraction.py` | 64 | 0 | 34 | 1 | 99% |
+| `backend/dam/main.py` | 292 | 4 | 70 | 6 | 97% |
+| `backend/dam/models.py` | 60 | 0 | 2 | 1 | 98% |
+| `backend/dam/pipeline.py` | 68 | 0 | 16 | 1 | 99% |
+| `backend/dam/security.py` | 21 | 0 | 8 | 0 | 100% |
+| `backend/dam/sources.py` | 92 | 0 | 32 | 0 | 100% |
+| `sdk/dam_client.py` | 15 | 0 | 2 | 0 | 100% |
+| **Total** | **612** | **4** | **164** | **9** | **98.3%** |
 
-Statement coverage: 569 / 597 = 95.3%. Branch coverage: 135 / 162 branch outcomes taken = 83.3%. The combined figure (93%) is coverage.py's branch-aware total.
+- **Statement coverage:** 608 / 612 = 99.3%.
+- **Branch coverage:** 155 / 164 branch outcomes = 94.5%.
 
-## Uncovered code and assessment
+The first measurement, on 11 November with 66 tests, was 93% combined (95.3% statements, 83.3% branches). PR #16 closed most of the gaps listed in that report.
 
-- **`main.py` lines 71–73:** a production start-up refusal when `DAM_SESSION_SECRET` is unset. Tests always build the app with `testing=True`, which generates a secret. **Lines 231–235:** the history filters that skip non-matching jobs (text query, verdict status, maximum confidence). The remaining misses are other negative paths in API routes. Next step: add negative-path API tests for history filtering and one start-up test without the secret.
-- **`sources.py` lines 85–88:** the Wikidata entity search for claims that don't match a known relation template. **Line 99:** a SPARQL query with no bindings. **Line 103:** several values where none matches the claim. These need extra mocked response fixtures, not live calls.
-- **`pipeline.py` line 57:** the Wikipedia adapter is only added in live mode, and the suite runs offline.
-- **`extraction.py` line 53:** the subjective-word filter (`best`, `wonderful`, `should` …). UT-01 uses "I think Paris is wonderful", which is caught earlier by the opinion-prefix rule, so this filter never fires. A sentence such as "Paris is the best city." would cover it.
+## Remaining uncovered code
+
+- **`main.py` line 73:** the test-only path that generates a session secret. The suite now passes an explicit secret, so this line never runs.
+- **`main.py` line 123:** the rate-limiter loop that evicts expired request timestamps. Covering it needs a test that advances the monotonic clock past the 60-second window.
+- **`main.py` lines 343 and 348:** serving the built dashboard (`frontend/dist`). The backend suite runs without a frontend build. The Playwright E2E job in CI exercises these paths.
+- **Partial branches.** Each of these is one side of a condition the tests never take:
+  - `main.py` 83→85: start-up on a database that already has settings, i.e. a restart.
+  - `main.py` 90→92: start-up where the demo API key is unset or already stored.
+  - `extraction.py` 40→exit: trailing text that yields no valid sentence span.
+  - `models.py` 71→79: a non-SQLite (PostgreSQL) database.
+  - `pipeline.py` 77→81: a fresh lookup where a source didn't return `ok`, so nothing is cached.
 
 ## Gate
 
-CI ([ci.yml](../.github/workflows/ci.yml)) now runs the same command with `--cov-fail-under=85`. A pull request that drops total coverage below 85% fails the backend job, and `coverage.xml` is uploaded as a build artifact next to the JUnit results.
+CI ([ci.yml](../.github/workflows/ci.yml)) runs the same command and fails the backend job if total coverage drops below 85%. It uploads `coverage.xml` and `test-results.xml` as build artifacts.

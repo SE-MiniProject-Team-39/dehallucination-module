@@ -7,13 +7,13 @@
 | Test catalog | [testing/](../testing/README.md): 32 scenarios (UT, IT, ST, AT ×8) |
 | Traceability | [TRACEABILITY.md](TRACEABILITY.md) |
 | Results | [TEST_RESULTS.md](TEST_RESULTS.md), [COVERAGE.md](COVERAGE.md) |
-| Plan version | 2.0 (11 November 2026). Replaces the prose-only v1. |
+| Plan version | 2.1 (12 November 2026). Replaces the prose-only v1. |
 
 ## 1. Objectives
 
 1. Show that every SRS requirement REQ-1 to REQ-19 has at least one passing test, or is listed as a known deviation in [DELIVERY.md](DELIVERY.md).
 2. Prevent regressions on every push and pull request through CI.
-3. Measure statement and branch coverage of `backend/dam` and keep it at 85% or above.
+3. Measure statement and branch coverage of `backend/dam` and `sdk` and keep it at 85% or above.
 4. Find security defects (authentication, authorization, CSRF, rate limiting, dependency CVEs) before release.
 
 ## 2. Scope

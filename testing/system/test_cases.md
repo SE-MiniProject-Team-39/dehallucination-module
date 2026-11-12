@@ -15,6 +15,13 @@ Scope: externally visible service behavior through HTTP. Automated execution use
 
 ## Execution record
 
-| Case ID | Date / environment | Observed result | Pass / Fail / Blocked | Evidence / defect ID |
+| Case ID | Date / environment | Observed result | Pass / Fail / Blocked | Evidence / test function |
 | --- | --- | --- | --- | --- |
-| — | Not executed as part of catalog creation | — | — | — |
+| ST-01 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | 10k chars accepted (200); 10,001 chars and invalid threshold reject (422) | Pass | `test_req01_limits_and_validation` |
+| ST-02 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Supported, Contradicted, Unsupported verdicts and empty list verified | Pass | `test_req06_verdicts`, `test_req04_empty_claim_list` |
+| ST-03 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Missing/wrong key returns 401; app mismatch returns 403; hash stored | Pass | `test_req14_auth_key_hash_and_ownership` |
+| ST-04 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | /openapi.json contains /verify; /docs returns 200 | Pass | `test_req15_openapi` |
+| ST-05 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Burst limit triggers 429 with Retry-After header | Pass | `test_req16_rate_limit` |
+| ST-06 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Missing CSRF returns 403; valid settings PUT audited; reviewer denied | Pass | `test_sessions_csrf_and_admin_configuration` |
+| ST-07 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Developer sees only own jobs; foreign job returns 404; revoked key returns 401 | Pass | `test_key_create_revocation_and_developer_isolation` |
+| ST-08 | 2026-11-02 / Win64 Py3.14.6 pytest-9.1.1 | Analytics filters verified; override rate reflects reviewer changes | Pass | `test_req19_analytics_filters_and_effective_verdicts` |
