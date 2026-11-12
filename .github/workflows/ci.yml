@@ -15,8 +15,8 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.lock
       - run: pip install -r requirements.lock
-      - run: pip install bandit pip-audit pytest-cov
-      - run: python -m pytest -q --junitxml=test-results.xml --cov=backend/dam --cov=sdk --cov-report=xml:coverage.xml --cov-report=term
+      - run: pip install bandit pip-audit pytest-cov==7.1.0
+      - run: python -m pytest -q --junitxml=test-results.xml --cov=backend/dam --cov=sdk --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=85
       - run: bandit -r backend/dam sdk -ll
       - run: pip-audit -r requirements.lock
       - uses: actions/upload-artifact@v4

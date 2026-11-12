@@ -11,6 +11,6 @@ frontend/test-results/
 frontend/playwright-report/
 .repo/
 .coverage
-coverage.xml
-test-results.xml
+/coverage.xml
+/test-results.xml
 htmlcov/
