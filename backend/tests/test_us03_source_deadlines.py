@@ -161,20 +161,35 @@ def test_all_sources_timing_out_yields_not_checkable_not_an_error(tmp_path, monk
 
 
 def test_sources_run_concurrently_not_sequentially(tmp_path, monkeypatch):
+    delay = .8
+
     class Slow(Hanging):
         async def query(self, text, client):
-            await asyncio.sleep(.5)
+            await asyncio.sleep(delay)
             return []
 
     class SlowCurated(Slow):
         name = 'curated'
-    monkeypatch.setattr(pipeline_module, 'CuratedSource', SlowCurated)
-    monkeypatch.setattr(pipeline_module, 'WikidataSource', Slow)
-    with make_client(tmp_path, monkeypatch, source_timeout=5) as client:
-        started = time.monotonic()
-        assert verify(client).status_code == 200
-        elapsed = time.monotonic() - started
-    assert elapsed < 0.95  # two 0.5s lookups overlap; sequential would be >= 1.0s
+
+    class Instant(Hanging):
+        name = 'curated'
+
+        async def query(self, text, client):
+            return []
+
+    def timed(curated, wikidata):
+        monkeypatch.setattr(pipeline_module, 'CuratedSource', curated)
+        monkeypatch.setattr(pipeline_module, 'WikidataSource', wikidata)
+        with make_client(tmp_path, monkeypatch, source_timeout=5) as client:
+            started = time.monotonic()
+            assert verify(client).status_code == 200
+            return time.monotonic() - started
+
+    # Baseline includes fixed per-request overhead (app, DB, HTTP client), which varies by platform.
+    one_slow = timed(Instant, Slow)
+    two_slow = timed(SlowCurated, Slow)
+    # Concurrent: the second slow source adds ~0, not a further `delay` seconds.
+    assert two_slow - one_slow < delay / 2
 
 
 def test_failed_lookups_are_not_cached(tmp_path, monkeypatch):
