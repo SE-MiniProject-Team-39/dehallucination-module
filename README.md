@@ -82,6 +82,8 @@ Adapter references: [MediaWiki Search API](https://www.mediawiki.org/wiki/API:Se
 
 ## Validate
 
+Ashrit's issue-linked fixes, ownership boundaries and regression evidence are documented in [backend core and extraction contribution](docs/ashrit-core-extraction.md). Run the focused suite with `python -m pytest backend/tests/ashrit -q`.
+
 The [testing folder](testing/README.md) organizes 32 documented scenarios into unit, integration, system and acceptance testing, with links to the existing automated checks.
 
 ```powershell

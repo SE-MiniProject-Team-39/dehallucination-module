@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, Float, ForeignKey, String, Text, create_engine
+from sqlalchemy import JSON, Boolean, Float, ForeignKey, String, Text, create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -68,5 +68,13 @@ def database(url=None):
     url = url or os.getenv("DATABASE_URL", "sqlite:///./dam.db")
     options = {"check_same_thread": False} if url.startswith("sqlite") else {}
     engine = create_engine(url, connect_args=options)
+    if engine.dialect.name == 'sqlite':
+        @event.listens_for(engine, 'connect')
+        def enable_foreign_keys(connection, connection_record):
+            cursor = connection.cursor()
+            try:
+                cursor.execute('PRAGMA foreign_keys=ON')
+            finally:
+                cursor.close()
     Base.metadata.create_all(engine)
     return sessionmaker(engine, expire_on_commit=False)

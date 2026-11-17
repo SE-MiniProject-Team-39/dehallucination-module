@@ -14,5 +14,19 @@ def hash_password(password, salt=None):
 
 
 def check_password(password, stored):
-    salt = stored.split('$')[0]
+    if not isinstance(password, str) or not isinstance(stored, str):
+        return False
+
+    parts = stored.split('$')
+    if len(parts) != 2:
+        return False
+
+    salt, digest = parts
+
+    if not salt or len(digest) != 64:
+        return False
+
+    if not all(c in '0123456789abcdefABCDEF' for c in digest):
+        return False
+
     return hmac.compare_digest(hash_password(password, salt), stored)

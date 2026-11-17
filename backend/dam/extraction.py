@@ -5,29 +5,46 @@ import re
 import httpx
 
 
+def _sentence_span(text, start, end):
+    """Exclude whitespace and enclosing quotes without changing source offsets."""
+    pairs = {'"': '"', "'": "'", '“': '”', '‘': '’'}
+    while start < end:
+        if text[start].isspace():
+            start += 1
+        elif text[end - 1].isspace():
+            end -= 1
+        elif end - start >= 2 and pairs.get(text[start]) == text[end - 1]:
+            start += 1
+            end -= 1
+        else:
+            break
+    return (start, end, text[start:end]) if start < end else None
+
+
 def segment(text):
     # Do not split abbreviations or decimal numbers.
-    boundaries = list(re.finditer(r'[.!?](?=\s|$)|\n+', text))
+    # A closing quote or bracket can sit between punctuation and whitespace.
+    boundaries = re.finditer(r'''[.!?]["'”’)\]]*(?=\s|$)|\n+''', text)
     start = 0
     for match in boundaries:
         end = match.end()
         piece = text[start:end]
         if re.search(r'\b(?:Mr|Mrs|Ms|Dr|Prof|e\.g|i\.e)\.$', piece.strip(), re.I):
             continue
-        left = start + len(piece) - len(piece.lstrip())
-        right = start + len(piece.rstrip())
-        if right > left:
-            yield left, right, text[left:right]
+        span = _sentence_span(text, start, end)
+        if span:
+            yield span
         start = end
     if text[start:].strip():
-        left = start + len(text[start:]) - len(text[start:].lstrip())
-        yield left, len(text.rstrip()), text[left:len(text.rstrip())]
+        span = _sentence_span(text, start, len(text))
+        if span:
+            yield span
 
 
 def fallback_extract(text):
     claims = []
     for start, end, sentence in segment(text):
-        if sentence.endswith('?') or re.match(
+        if re.search(r'\?[!?]*$', sentence.rstrip('"\'”’)]')) or re.match(
             r'^(?:hello|hi|hey|thanks|thank you|please|i think|i believe|in my opinion|perhaps|maybe)\b',
             sentence, re.I
         ):
@@ -61,6 +78,8 @@ async def extract(text, context=""):
                 start, end = span["start"], span["end"]
                 if type(start) is not int or type(end) is not int or not (last_end <= start < end <= len(text)):
                     raise ValueError("Invalid or overlapping LLM offsets")
+                if not text[start:end].strip():
+                    raise ValueError("LLM claim spans must contain non-whitespace text")
                 claims.append({"text": text[start:end], "start": start, "end": end})
                 last_end = end
             return claims, "llm"

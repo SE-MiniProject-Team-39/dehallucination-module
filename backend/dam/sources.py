@@ -134,5 +134,7 @@ async def lookup(adapter, text, client, timeout, weight):
         return {"source": adapter.name, "status": "ok", "evidence": items}
     except (TimeoutError, httpx.TimeoutException):
         return {"source": adapter.name, "status": "timeout", "evidence": []}
-    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+    except Exception:
+        # One failing adapter must never fail the whole verification request (REQ-8).
+        # CancelledError is a BaseException and still propagates.
         return {"source": adapter.name, "status": "unavailable", "evidence": []}
