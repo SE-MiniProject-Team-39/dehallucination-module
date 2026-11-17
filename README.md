@@ -102,3 +102,60 @@ Tests cover all 19 functional requirement paths, including Unicode offsets, empt
 After generating `.env`, run `docker compose up --build`. This builds the dashboard into the API image and starts PostgreSQL with persistent storage. SQLite is the default zero-setup local database; set `DATABASE_URL=postgresql+psycopg://...` for a separate PostgreSQL instance. PostgreSQL/Docker operation requires Docker and is not validated by the local SQLite test suite.
 
 For internet-facing deployment, terminate HTTPS at a reverse proxy and set `DAM_SECURE_COOKIES=true`. Start with one API worker: rate-limit and login counters are process-local. Multiple workers require a shared limiter. There is no automatic deployment from CI because no target or credentials were supplied. Schema creation is suitable for the initial version; introduce migrations before evolving a deployed schema. Review [documented deviations](docs/DELIVERY.md) before the final demo.
+
+## HTTPS Deployment and Secure Cookies
+
+### 1. HTTPS Reverse Proxy Configuration
+
+The application runs internally on port `8000`. In production, Nginx can act as a reverse proxy and handle HTTPS connections.
+
+Example Nginx configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+```
+
+Replace `your-domain.com` with the actual production domain and configure valid TLS certificates.
+
+### 2. Secure Cookie Configuration
+
+In production, session cookies should use the following security settings:
+
+- `Secure`: Cookies are sent only over HTTPS.
+- `HttpOnly`: JavaScript cannot access the cookies.
+- `SameSite`: Helps protect against cross-site request forgery.
+
+Secure cookies should be enabled in the application's production configuration. Do not use insecure cookie settings for a public HTTPS deployment.
+
+### 3. Deployment Notes
+
+- Keep the application server accessible only through the reverse proxy.
+- Use valid TLS certificates.
+- Redirect HTTP traffic to HTTPS.
+- Store database credentials and secrets in environment variables.
+- Renew TLS certificates before they expire.
+
+DAM_SECURE_COOKIES=true
+
+
