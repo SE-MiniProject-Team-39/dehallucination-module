@@ -65,7 +65,26 @@ try {
     if (-not $pythonChanged) { $pythonChanged = (Get-Content -LiteralPath $pythonStamp -Raw).Trim() -ne $pythonHash }
     if (-not $SkipInstall -and $pythonChanged) {
         Write-Host 'Installing backend dependencies...'
-        Invoke-Checked -Program $python -Arguments @('-m', 'pip', 'install', '-r', 'requirements.lock')
+        $uv = Get-Command uv -ErrorAction SilentlyContinue
+        if ($uv) {
+            # uv-created environments have no pip; uv installs into them directly.
+            Invoke-Checked -Program $uv.Source -Arguments @('pip', 'install', '--python', $python, '-r', 'requirements.lock')
+        }
+        else {
+            $hasPip = $false
+            try {
+                $ErrorActionPreference = 'Continue'
+                & $python -m pip --version *> $null
+                $hasPip = ($LASTEXITCODE -eq 0)
+            }
+            catch { $hasPip = $false }
+            finally { $ErrorActionPreference = 'Stop' }
+            if (-not $hasPip) {
+                Write-Host 'pip is missing from .venv; restoring it...'
+                Invoke-Checked -Program $python -Arguments @('-m', 'ensurepip', '--upgrade')
+            }
+            Invoke-Checked -Program $python -Arguments @('-m', 'pip', 'install', '-r', 'requirements.lock')
+        }
         Set-Content -LiteralPath $pythonStamp -Value $pythonHash -Encoding ascii
     }
     Invoke-Checked -Program $python -Arguments @('-c', 'import fastapi, uvicorn, sqlalchemy, httpx, dotenv, itsdangerous')
@@ -80,6 +99,9 @@ try {
             Write-Host 'Installing dashboard dependencies...'
             Invoke-Checked -Program $npm.Source -Arguments @('ci')
             Set-Content -LiteralPath $nodeStamp -Value $nodeHash -Encoding ascii
+        }
+        if (-not (Test-Path -LiteralPath 'node_modules\.bin\vite.cmd')) {
+            throw 'Dashboard dependencies are not installed. Run again without -SkipInstall.'
         }
         Write-Host 'Building the dashboard...'
         Invoke-Checked -Program $npm.Source -Arguments @('run', 'build')
