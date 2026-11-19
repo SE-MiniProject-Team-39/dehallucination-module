@@ -4,6 +4,13 @@ A local FastAPI service and React reviewer workspace built from the two supplied
 
 **This is a runnable course-project implementation with bounded verification coverage.** The offline demonstration recognizes seven seeded relationships (capital cities, Hamlet's author, Earth's orbit). It does not establish the truth of arbitrary prose. Unmatched claims remain Unsupported; unavailable sources produce Not-Checkable when no evidence remains. Confidence is a heuristic, not a calibrated probability.
 
+## Submission at a glance
+
+- **Deliverables index and declared deviations:** [docs/DELIVERY.md](docs/DELIVERY.md)
+- **Architecture:** [system diagram](docs/architecture.png), [pipeline diagram](docs/pipeline.png), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [SAD](docs/DAM_Software_Architecture_Document_SAD.docx), [SDD](docs/DAM_Software_Design_Document.docx)
+- **Testing:** [TEST_PLAN.md](docs/TEST_PLAN.md), [TEST_RESULTS.md](docs/TEST_RESULTS.md) (280 tests passing, browser end-to-end, Docker/PostgreSQL, live sources), [COVERAGE.md](docs/COVERAGE.md) (98.8% combined, 96.3% branch)
+- **Sprint demos:** [Sprint 1](docs/sprint-1.mp4), [Sprint 2](docs/sprint-2.mp4) · **Backlog:** GitHub Project "DAM 1.0 Backlog" (14 stories, 65 points, 2 sprints)
+
 ## Run on Windows
 
 Run the whole application with one command (or double-click `launch.cmd`):

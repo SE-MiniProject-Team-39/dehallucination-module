@@ -1,5 +1,11 @@
 # Architecture and design
 
+![DAM system architecture](architecture.png)
+
+The request pipeline, with a worked example at each stage, the human-review loop and the failure paths:
+
+![DAM verification pipeline](pipeline.png)
+
 The implementation keeps extraction, source adapters, scoring/orchestration, storage/security, and the HTTP interface in separate modules. The reviewer workspace is a React application built by Vite and served alongside the JSON API. The Python SDK uses the standard library.
 
 ```mermaid
