@@ -25,7 +25,7 @@ def proposition(text):
         (r'(?:the )?capital of (.+?) is (.+?)[.!]?$', 'capital', False),
         (r'(.+?) is (?:the )?capital of (.+?)[.!]?$', 'capital', True),
         (r'(.+?) was written by (.+?)[.!]?$', 'author', False),
-        (r'(.+?) orbits (?:the )?(.+?)[.!]?$', 'orbits', False),
+        (r'(?:the )?(.+?) orbits (?:the )?(.+?)[.!]?$', 'orbits', False),
     ]
     for pattern, relation, reverse in patterns:
         match = re.fullmatch(pattern, text.strip(), re.I)
