@@ -246,3 +246,40 @@ class TestBugRegressionApiFiltersAndErrors:
         login(client, "admin")
         res2 = client.get("/api/settings")
         assert res2.status_code == 200
+
+
+def test_live_sources_send_a_wikimedia_compliant_user_agent(tmp_path, monkeypatch):
+    # Wikimedia answers 403 to clients whose User-Agent has no contact URL,
+    # which made every live lookup "unavailable" and every claim Not-Checkable.
+    import httpx
+    monkeypatch.setenv("DAM_LIVE_SOURCES", "true")
+    monkeypatch.setenv("DAM_ADMIN_PASSWORD", "admin")
+    monkeypatch.setenv("DAM_API_KEY", "live-key")
+
+    def handler(request):
+        if "(https://" not in request.headers.get("user-agent", ""):
+            return httpx.Response(403, text="Please set a user-agent and respect our robot policy")
+        if "wikidata.org/sparql" in str(request.url):
+            return httpx.Response(200, json={"results": {"bindings": [{"valueLabel": {"value": "Berlin"}}]}})
+        return httpx.Response(200, json={"query": {"pages": {}}})
+
+    orig_init = httpx.AsyncClient.__init__
+
+    def mock_init(self, *args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(handler)
+        orig_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "__init__", mock_init)
+    app = create_app("sqlite:///" + (tmp_path / "ua.db").as_posix(), testing=True)
+    with TestClient(app) as client:
+        claim = client.post("/verify", headers={"Authorization": "Bearer live-key"},
+                            json={"text": "The capital of Germany is Berlin.", "source_app_id": "demo-app"}).json()["claims"][0]
+    statuses = {r["source"]: r["status"] for r in claim["source_results"]}
+    assert statuses["wikidata"] == "ok" and statuses["wikipedia"] == "ok"
+    assert claim["verdict"] == "Supported"
+
+
+@pytest.mark.parametrize("text", ["Earth orbits the Sun.", "The Earth orbits the Sun.", "the Earth orbits Sun."])
+def test_orbit_claims_match_with_or_without_leading_article(text):
+    from backend.dam.sources import proposition
+    assert proposition(text) == ("earth", "orbits", "sun")

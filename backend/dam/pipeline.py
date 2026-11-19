@@ -71,7 +71,7 @@ class Pipeline:
                 if results is None:
                     async with self.semaphore:
                         if client is None:
-                            client = await stack.enter_async_context(httpx.AsyncClient(headers={'User-Agent': 'DAM-University-Project/1.0'}, timeout=settings['source_timeout']))
+                            client = await stack.enter_async_context(httpx.AsyncClient(headers={'User-Agent': 'DAM-University-Project/1.0 (https://github.com/SE-MiniProject-Team-39/dehallucination-module)'}, timeout=settings['source_timeout']))
                         results = await asyncio.gather(*(lookup(a, claim['text'], client, settings['source_timeout'], settings['sources'][a.name]['weight']) for a in adapters))
                     # Failures are retried rather than cached for a full day.
                     if results and all(r['status'] == 'ok' for r in results):
