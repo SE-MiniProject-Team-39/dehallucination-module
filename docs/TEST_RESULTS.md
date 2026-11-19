@@ -1,5 +1,24 @@
 # Local verification results
 
+## Final run — 19 November 2026 (submission)
+
+Run on `main` after PRs #42 and #43, Windows 11, Python 3.11.9.
+
+| Check | Result |
+| --- | --- |
+| Backend tests (unit, integration, acceptance, regression) | **280 passed**, 0 failed. JUnit: [test-results.xml](test-results.xml) |
+| Code and branch coverage | **98.8%** combined: 99.5% statements, 96.3% branches. Details: [COVERAGE.md](COVERAGE.md) |
+| Browser end-to-end (Playwright, headless Edge) | **1 full workflow passed**. Covers sign-in, wrong password, input limits, error handling, 4 verdict colours, correction, override, approval, JSON export, history filters, analytics, settings, audit |
+| Manual UI walkthrough | All five pages checked at 1440 px and 390 px widths. No JavaScript errors, no horizontal scrolling |
+| One-click launcher | `launch.cmd -Check` passed with a uv-created venv, with a pip-less venv and no uv, and on a second run with installs skipped |
+| Docker Compose + PostgreSQL 16 | Image built, database healthy, dashboard HTTP 200. A verification request returned the correct verdicts. All 6 tables present in PostgreSQL; the stored job survived an app restart |
+| Live sources (`DAM_LIVE_SOURCES=true`, real Wikidata/Wikipedia) | All sources status `ok`. "The capital of Germany is Berlin" and "…Kenya is Nairobi": Supported. "…Italy is Madrid": Contradicted, with suggested correction "Rome" |
+| CI on GitHub Actions | Green on `main`: run #73 (backend tests + coverage gate, Bandit, pip-audit, npm audit, Vite build, Playwright) |
+
+**Defect found and fixed in this run.** Before PR #42, live mode returned Not-Checkable for every claim. Wikimedia now rejects User-Agents with no contact URL (HTTP 403), and the adapters reported each source as `unavailable`. The mocked tests could not catch this. A regression test now simulates the 403.
+
+**Local load check** (offline mode, SQLite, one worker): 50 simultaneous verification requests all returned HTTP 200. Each took about 17.5 s, because requests are effectively serialised by SQLite writes in a single process. The per-key rate limiter then returned HTTP 429 as designed. This is the expected limit of the single-instance design; see deviation 6 in [DELIVERY.md](DELIVERY.md).
+
 ## Re-run — 12 November 2026 (after merging main, including PR #16)
 
 - Backend: **203 passed**, 0 failed. The suite grew from 32 (22 Oct) to 66 (PRs #4–#7) to 203 (PR #16 unit and integration suites). JUnit output: [test-results.xml](test-results.xml).

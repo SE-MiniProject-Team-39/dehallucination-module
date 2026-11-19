@@ -1,40 +1,50 @@
-# Code and branch coverage report — 12 November 2026
+# Code and branch coverage report — 19 November 2026 (final)
 
-This report covers the merged suite: the core regression tests (PRs #4–#7) plus the unit and integration suites from PR #16. The command, run from the repository root with the project virtual environment, is:
+This report covers the final suite on `main`:
+- the core regression tests (PRs #4–#7);
+- the unit and integration suites (PR #16);
+- the US-02, US-03, US-05 and US-10 acceptance suites (PRs #31–#35);
+- the live-source and orbit-claim regression tests (PR #42).
+
+The command, run from the repository root with the project virtual environment, is:
 
 ```
-python -m pytest -q --cov=backend/dam --cov=sdk --cov-branch --cov-report=term-missing --cov-report=xml:docs/coverage.xml
+python -m pytest -q --junitxml=docs/test-results.xml --cov=backend/dam --cov=sdk --cov-branch --cov-report=term-missing --cov-report=xml:docs/coverage.xml
 ```
 
-Tooling: pytest 9.1.1, pytest-cov 7.1.0, coverage.py 7.17.2, Python 3.11.9 (Windows). Result: **203 passed, 0 failed**. Machine-readable output: [coverage.xml](coverage.xml). JUnit output: [test-results.xml](test-results.xml).
+Tooling: pytest 9.1.1, pytest-cov 7.1.0, Python 3.11.9 (Windows 11). Result: **280 passed, 0 failed** (220 s). Machine-readable output: [coverage.xml](coverage.xml). JUnit output: [test-results.xml](test-results.xml).
 
 | Module | Statements | Missed | Branches | Partial | Coverage |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `backend/dam/extraction.py` | 64 | 0 | 34 | 1 | 99% |
-| `backend/dam/main.py` | 292 | 4 | 70 | 6 | 97% |
+| `backend/dam/main.py` | 292 | 3 | 70 | 4 | 98% |
 | `backend/dam/models.py` | 60 | 0 | 2 | 1 | 98% |
-| `backend/dam/pipeline.py` | 68 | 0 | 16 | 1 | 99% |
+| `backend/dam/pipeline.py` | 68 | 0 | 16 | 0 | 100% |
 | `backend/dam/security.py` | 21 | 0 | 8 | 0 | 100% |
 | `backend/dam/sources.py` | 92 | 0 | 32 | 0 | 100% |
 | `sdk/dam_client.py` | 15 | 0 | 2 | 0 | 100% |
-| **Total** | **612** | **4** | **164** | **9** | **98.3%** |
+| **Total** | **612** | **3** | **164** | **6** | **98.8%** |
 
-- **Statement coverage:** 608 / 612 = 99.3%.
-- **Branch coverage:** 155 / 164 branch outcomes = 94.5%.
+- **Statement coverage:** 609 / 612 = **99.5%**.
+- **Branch coverage:** 158 / 164 branch outcomes = **96.3%**.
+- **Combined (statements + branches):** 767 / 776 = **98.8%**.
 
-The first measurement, on 11 November with 66 tests, was 93% combined (95.3% statements, 83.3% branches). PR #16 closed most of the gaps listed in that report.
+## History
+
+| Date | Tests | Combined | Statements | Branches | Change |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 11 Nov | 66 | 93.0% | 95.3% | 83.3% | First measurement (PRs #4–#7) |
+| 12 Nov | 203 | 98.3% | 99.3% | 94.5% | Unit and integration suites (PR #16) |
+| 19 Nov | 280 | 98.8% | 99.5% | 96.3% | Acceptance suites (PRs #31–#35) and regression tests (PR #42) |
 
 ## Remaining uncovered code
 
-- **`main.py` line 73:** the test-only path that generates a session secret. The suite now passes an explicit secret, so this line never runs.
+- **`main.py` line 73:** the test-only path that generates a session secret. The suite passes an explicit secret, so this line never runs.
 - **`main.py` line 123:** the rate-limiter loop that evicts expired request timestamps. Covering it needs a test that advances the monotonic clock past the 60-second window.
-- **`main.py` lines 343 and 348:** serving the built dashboard (`frontend/dist`). The backend suite runs without a frontend build. The Playwright E2E job in CI exercises these paths.
-- **Partial branches.** Each of these is one side of a condition the tests never take:
-  - `main.py` 83→85: start-up on a database that already has settings, i.e. a restart.
-  - `main.py` 90→92: start-up where the demo API key is unset or already stored.
+- **`main.py` 342→345 and line 349:** serving the dashboard depends on whether `frontend/dist` has been built. With a build present (as here), the "build the frontend first" fallback never runs. Without one, the file-serving path is skipped. The Playwright end-to-end job in CI covers the built path.
+- **Partial branches.** Four of the six are the conditions leading into the uncovered `main.py` lines above. The other two are each one side of a condition the tests never take:
   - `extraction.py` 40→exit: trailing text that yields no valid sentence span.
-  - `models.py` 71→79: a non-SQLite (PostgreSQL) database.
-  - `pipeline.py` 77→81: a fresh lookup where a source didn't return `ok`, so nothing is cached.
+  - `models.py` 71→79: a non-SQLite (PostgreSQL) database. The PostgreSQL path was exercised manually with Docker Compose on 19 November; see [TEST_RESULTS.md](TEST_RESULTS.md).
 
 ## Gate
 
