@@ -5,7 +5,9 @@ param(
     [switch]$NoBrowser,
     [switch]$SkipInstall,
     [switch]$Check,
-    [switch]$Offline
+    [switch]$Offline,
+    [switch]$NoLlm,
+    [string]$OllamaModel = 'qwen2.5:3b'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -151,16 +153,47 @@ try {
         }
     }
 
+    # Claim extraction: an LLM configured in .env wins; otherwise use a local
+    # Ollama model when one is running; otherwise the rule-based extractor.
     $llmConfigured = -not [string]::IsNullOrWhiteSpace($env:DAM_LLM_URL)
     if (-not $llmConfigured) {
         $llmLine = Select-String -LiteralPath (Join-Path $projectRoot '.env') -Pattern '^\s*DAM_LLM_URL\s*=\s*\S' -Quiet
         $llmConfigured = [bool]$llmLine
     }
-    if ($llmConfigured) {
-        Write-Host 'Claim extraction: LLM (falls back to rules on any error).' -ForegroundColor Green
+    if ($NoLlm) {
+        $env:DAM_LLM_URL = ' '  # a blank value overrides any URL in .env
+        Write-Host 'Claim extraction: rule-based (-NoLlm given).'
+    }
+    elseif ($llmConfigured) {
+        Write-Host 'Claim extraction: LLM from .env (falls back to rules on any error).' -ForegroundColor Green
     }
     else {
-        Write-Host 'Claim extraction: rule-based. To use an LLM, set DAM_LLM_URL, DAM_LLM_KEY and DAM_LLM_MODEL in .env.'
+        $ollamaModels = @()
+        try {
+            $tags = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 3
+            $ollamaModels = @($tags.models | ForEach-Object { $_.name } | Where-Object { $_ -notmatch 'embed' })
+        }
+        catch { }
+        if ($ollamaModels.Count -eq 0) {
+            Write-Host 'Claim extraction: rule-based. Start Ollama (or set DAM_LLM_URL/KEY/MODEL in .env) to use an LLM.'
+        }
+        else {
+            $model = $OllamaModel
+            if ($ollamaModels -notcontains $model) {
+                Write-Warning "Ollama model '$model' is not installed (ollama pull $model). Using '$($ollamaModels[0])' instead."
+                $model = $ollamaModels[0]
+            }
+            $env:DAM_LLM_URL = 'http://127.0.0.1:11434/v1/chat/completions'
+            $env:DAM_LLM_KEY = 'ollama'
+            $env:DAM_LLM_MODEL = $model
+            if ([string]::IsNullOrWhiteSpace($env:DAM_LLM_TIMEOUT)) { $env:DAM_LLM_TIMEOUT = '30' }
+            Write-Host "Claim extraction: local Ollama '$model' (falls back to rules on any error). Loading model..." -ForegroundColor Green
+            try {
+                $body = @{ model = $model; keep_alive = '30m' } | ConvertTo-Json
+                Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/generate' -Method Post -Body $body -ContentType 'application/json' -TimeoutSec 120 | Out-Null
+            }
+            catch { Write-Warning "Could not preload '$model'; the first verification may be slow." }
+        }
     }
 
     $stdoutLog = Join-Path $projectRoot '.venv\dam-server.log'

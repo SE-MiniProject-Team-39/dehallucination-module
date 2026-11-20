@@ -1,5 +1,14 @@
 # Local verification results
 
+## Addendum — 20 November 2026: prompt injection and local LLM extraction
+
+| Check | Result |
+| --- | --- |
+| Injection attack text (from the demo): two false claims + four "SYSTEM INSTRUCTION…" sentences | Both false claims extracted and flagged Unsupported (0 Supported, hallucination score 100%). All four instructions detected, shown in a warning banner and struck through, and never treated as claims. Sources were still queried |
+| Missed-claim defect | "Humans can breathe normally in the vacuum of space." was previously skipped (no recognised verb). Modal and common verbs (*can, cannot, will, does, need…*) now yield claims; imperatives ("Do not…", "Let's…") do not |
+| Local LLM extractor (Ollama, quote mode) | Same text in the dashboard, launched with `launch.cmd`: live sources + `qwen2.5:3b`, 9.5 s end to end. Model comparison on two texts: `qwen2.5:3b` correct on both (3–6 s); `qwen2.5:1.5b` missed claims; `qwen2.5:7b` took an opinion as a claim and was slower (6–10 s). Character offsets from all local models were unusable, so the model now quotes claim text and DAM locates it |
+| Tests | 26 new tests (injection phrasings, false-positive prose, new claim verbs, LLM quote mode, API `injection_warnings`). Full suite: **306 passed**, coverage 98.5% (gate 85%). Playwright passes |
+
 ## Final run — 19 November 2026 (submission)
 
 Run on `main` after PRs #42 and #43, Windows 11, Python 3.11.9.
