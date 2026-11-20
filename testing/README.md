@@ -4,39 +4,27 @@ This repository implements a multi-tier testing strategy covering **unit, integr
 
 ## Test Suite Architecture
 
-```
-backend/tests/
-  ├── test_dam.py                 # Core requirements suite (REQ-01 to REQ-19) [32 tests]
-  ├── test_unit_extraction.py     # Segmentation, abbreviations, filters, LLM spans [46 tests]
-  ├── test_unit_pipeline.py       # Scoring formula, trust, recency, summarize [12 tests]
-  ├── test_unit_security.py       # PBKDF2 hashing, salts, key hashes [11 tests]
-  ├── test_unit_models.py         # SQLAlchemy models, timestamps, constraints [7 tests]
-  ├── test_unit_sources.py        # Proposition parsing, Curated/Wikidata/Wiki adapters [39 tests]
-  ├── test_unit_sdk.py            # DAMClient SDK requests, headers, timeouts, errors [6 tests]
-  ├── test_integration_flow.py    # Review lifecycle, developer isolation, cache TTL, rate limit [6 tests]
-  └── test_regression.py          # Regression tests for confirmed bugs and edge cases [10 tests]
-```
+Final count, 20 November 2026: **315 automated backend tests, all passing**, plus the Playwright browser workflow. Coverage is 97.7% of statements and 92.4% of branches (96.5% combined); see [COVERAGE.md](../docs/COVERAGE.md).
 
-Total automated backend test count: **169 tests** (100% passing).
-
----
-
-## Code Coverage Summary
-
-Automated testing achieved **99% total statement coverage** across the core codebase:
-
-| Module | Statements | Missing | Coverage | Notes |
-| :--- | :---: | :---: | :---: | :--- |
-| `backend/dam/extraction.py` | 50 | 0 | **100%** | Full segmentation, rule-based fallback, and LLM span extraction |
-| `backend/dam/models.py` | 53 | 0 | **100%** | All models, SQLite configurations, and sessionmaker factory |
-| `backend/dam/pipeline.py` | 68 | 0 | **100%** | Full pipeline, scoring formulas, recency decay, and caching |
-| `backend/dam/security.py` | 12 | 0 | **100%** | PBKDF2 hashing, salts, constant-time comparisons, key hashing |
-| `backend/dam/sources.py` | 92 | 0 | **100%** | CuratedSource, WikidataSource (offline & live), WikipediaSource, lookup wrapper |
-| `sdk/dam_client.py` | 15 | 0 | **100%** | Client initialization, headers, payload serialization, error propagation |
-| `backend/dam/main.py` | 290 | 2 | **99%** | All endpoints, auth, RBAC, filters, overrides, and rate limiting |
-| **TOTAL** | **580** | **2** | **99%** | Highly comprehensive automated verification |
-
----
+| Test file | Level | What it covers | Tests |
+|---|---|---|---:|
+| `test_unit_extraction.py` | Unit | Sentence segmentation, abbreviations, opinion/question filters, LLM spans | 46 |
+| `test_unit_sources.py` | Unit | Proposition parsing; curated, Wikidata and Wikipedia adapters | 39 |
+| `test_unit_pipeline.py` | Unit | Scoring formula, trust, recency, summary | 12 |
+| `test_unit_security.py` | Unit | PBKDF2 password hashing, salts, API-key hashes | 11 |
+| `test_unit_models.py` | Unit | SQLAlchemy models, timestamps, constraints | 7 |
+| `test_unit_sdk.py` | Unit | Python SDK requests, headers, timeouts, errors | 6 |
+| `test_dam.py` | System | REQ-1 to REQ-19 end to end through the API | 44 |
+| `test_integration_flow.py` | Integration | Review lifecycle, developer isolation, cache lifetime, rate limit | 6 |
+| `test_us02_trusted_adapters.py` | Acceptance | US-02 trusted graph and text adapters | 16 |
+| `test_us03_source_deadlines.py` | Acceptance | US-03 source deadlines and graceful degradation | 15 |
+| `test_us05_authenticated_api.py` | Acceptance | US-05 authenticated integration API | 16 |
+| `test_us10_admin_source_policy.py` | Acceptance | US-10 admin source policy and access control | 26 |
+| `test_injection_and_llm_quotes.py` | Unit + system | Prompt-injection detection, claim detection, LLM quote mode | 26 |
+| `test_judge_evidence.py` | Unit + system | LLM evidence judge, uncited model knowledge, settings | 9 |
+| `test_regression.py` | Regression | Confirmed bugs and edge cases | 14 |
+| `ashrit/` (4 files) | Regression | Issue-linked fixes: quotes, LLM spans, SQLite foreign keys, timeout threshold | 22 |
+| **Total** | | | **315** |
 
 ## Test Execution Commands
 

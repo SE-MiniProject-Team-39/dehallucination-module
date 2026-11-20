@@ -6,6 +6,7 @@ A local FastAPI service and React reviewer workspace built from the two supplied
 
 ## Submission at a glance
 
+- **Project report (all deliverables in one PDF):** [DAM_Project_Report.pdf](docs/DAM_Project_Report.pdf)
 - **Deliverables index and declared deviations:** [docs/DELIVERY.md](docs/DELIVERY.md)
 - **Architecture:** [system diagram](docs/architecture.png), [pipeline diagram](docs/pipeline.png), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [SAD](docs/DAM_Software_Architecture_Document_SAD.docx), [SDD](docs/DAM_Software_Design_Document.docx)
 - **Testing:** [TEST_PLAN.md](docs/TEST_PLAN.md), [TEST_RESULTS.md](docs/TEST_RESULTS.md) (315 tests passing, browser end-to-end, Docker/PostgreSQL, live sources, LLM evidence judge), [COVERAGE.md](docs/COVERAGE.md) (96.5% combined, 92.4% branch)
