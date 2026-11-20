@@ -93,5 +93,5 @@ class Pipeline:
                 return {**claim, "claim_id": str(uuid4()), **score(results, threshold), "source_results": results, "cached": hit}
             checked = await asyncio.gather(*(process(c) for c in claims))
         return summarize({"original_text": text, "claims": checked, "extractor": extractor,
-                          "injection_warnings": detect_injections(text),
+                          "injection_warnings": detect_injections(text), "judge": judge_model,
                           "mode": "live" if self.live else "offline snapshot", "confidence_threshold": threshold})
