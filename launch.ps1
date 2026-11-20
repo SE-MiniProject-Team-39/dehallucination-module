@@ -4,7 +4,8 @@ param(
     [int]$Port = 8000,
     [switch]$NoBrowser,
     [switch]$SkipInstall,
-    [switch]$Check
+    [switch]$Check,
+    [switch]$Offline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -112,6 +113,56 @@ try {
         Invoke-Checked -Program $python -Arguments @('manage.py', 'init')
     }
 
+    # Prefer live Wikidata/Wikipedia evidence; fall back to the offline snapshot
+    # only when the sources cannot be reached (or -Offline is given).
+    $expectedMode = 'offline snapshot'
+    if ($Offline) {
+        $env:DAM_LIVE_SOURCES = 'false'
+        Write-Host 'Sources: offline snapshot (-Offline given).' -ForegroundColor Yellow
+    }
+    else {
+        Write-Host 'Checking live sources (Wikidata, Wikipedia)...'
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+        $agent = 'DAM-University-Project/1.0 (https://github.com/SE-MiniProject-Team-39/dehallucination-module)'
+        $probes = [ordered]@{
+            'Wikidata'  = 'https://query.wikidata.org/sparql?format=json&query=ASK%7B%7D'
+            'Wikipedia' = 'https://en.wikipedia.org/w/api.php?action=query&meta=siteinfo&format=json'
+        }
+        $unreachable = @()
+        foreach ($name in $probes.Keys) {
+            $reachable = $false
+            foreach ($attempt in 1..2) {
+                try {
+                    $response = Invoke-WebRequest -Uri $probes[$name] -UserAgent $agent -UseBasicParsing -TimeoutSec 8
+                    if ($response.StatusCode -eq 200) { $reachable = $true; break }
+                }
+                catch { }
+            }
+            if (-not $reachable) { $unreachable += $name }
+        }
+        if ($unreachable.Count -eq 0) {
+            $env:DAM_LIVE_SOURCES = 'true'
+            $expectedMode = 'live'
+            Write-Host 'Sources: LIVE (Wikidata + Wikipedia reachable).' -ForegroundColor Green
+        }
+        else {
+            $env:DAM_LIVE_SOURCES = 'false'
+            Write-Warning "Sources: offline snapshot ($($unreachable -join ', ') unreachable). Check your internet connection."
+        }
+    }
+
+    $llmConfigured = -not [string]::IsNullOrWhiteSpace($env:DAM_LLM_URL)
+    if (-not $llmConfigured) {
+        $llmLine = Select-String -LiteralPath (Join-Path $projectRoot '.env') -Pattern '^\s*DAM_LLM_URL\s*=\s*\S' -Quiet
+        $llmConfigured = [bool]$llmLine
+    }
+    if ($llmConfigured) {
+        Write-Host 'Claim extraction: LLM (falls back to rules on any error).' -ForegroundColor Green
+    }
+    else {
+        Write-Host 'Claim extraction: rule-based. To use an LLM, set DAM_LLM_URL, DAM_LLM_KEY and DAM_LLM_MODEL in .env.'
+    }
+
     $stdoutLog = Join-Path $projectRoot '.venv\dam-server.log'
     $stderrLog = Join-Path $projectRoot '.venv\dam-server.err.log'
     $url = "http://127.0.0.1:$Port"
@@ -139,12 +190,16 @@ try {
 
     Write-Host "Dashboard: $url" -ForegroundColor Green
     Write-Host "API docs:  $url/docs"
+    Write-Host "Mode:      $($health.mode)"
     Write-Host 'Sign in as admin or reviewer using the passwords in .env.'
     Write-Host "Server logs: $stdoutLog and $stderrLog"
     if ($Check) {
         $dashboard = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 5
         if ($dashboard.StatusCode -ne 200 -or $dashboard.Content -notmatch 'id="root"') {
             throw 'The dashboard did not serve the built frontend.'
+        }
+        if ($health.mode -ne $expectedMode) {
+            throw "Server reported mode '$($health.mode)' but '$expectedMode' was expected."
         }
         Write-Host 'Launch check passed; stopping the test server.' -ForegroundColor Green
     }
