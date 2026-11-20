@@ -1,5 +1,13 @@
 # Local verification results
 
+## Addendum — 20 November 2026: LLM evidence judge
+
+| Check | Result |
+| --- | --- |
+| Judge model choice (12 claims, known answers, Wikipedia passages) | `qwen2.5:7b` 11/12; `qwen2.5:3b` 4/12. Model knowledge alone: 7b 11/12, 3b 5/12 |
+| End to end via `launch.cmd` (live, judge `qwen2.5:7b`, rule-based extraction) | 6 ML claims + 5 general claims + 1 opinion: **11/11 verdicts correct**, opinion skipped, 28.8 s. True claims Supported at 0.85 with Wikipedia citations. False claims Contradicted, with Wikipedia corrections (e.g. Canberra; "cannot be seen by the naked human eye from the Moon") |
+| Tests | 9 new judge tests; full suite **315 passed**, coverage 96.5% |
+
 ## Addendum — 20 November 2026: prompt injection and local LLM extraction
 
 | Check | Result |

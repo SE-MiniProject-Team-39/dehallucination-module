@@ -7,7 +7,9 @@ param(
     [switch]$Check,
     [switch]$Offline,
     [switch]$NoLlm,
-    [string]$OllamaModel = 'qwen2.5:3b'
+    [string]$OllamaModel = 'qwen2.5:3b',
+    [switch]$NoJudge,
+    [string]$JudgeModel = 'qwen2.5:7b'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -153,8 +155,38 @@ try {
         }
     }
 
+    # Evidence judge: a local Ollama model reads retrieved Wikipedia passages and
+    # judges each claim, and adds low-weight uncited model knowledge.
+    $ollamaModels = @()
+    try {
+        $tags = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 3
+        $ollamaModels = @($tags.models | ForEach-Object { $_.name } | Where-Object { $_ -notmatch 'embed' })
+    }
+    catch { }
+    $judgeOn = $false
+    if ($NoJudge) {
+        Write-Host 'Evidence judge: off (-NoJudge given).'
+    }
+    elseif ($ollamaModels -contains $JudgeModel) {
+        $judgeOn = $true
+        $env:DAM_JUDGE_URL = 'http://127.0.0.1:11434/api/chat'
+        $env:DAM_JUDGE_MODEL = $JudgeModel
+        Write-Host "Evidence judge: local Ollama '$JudgeModel' reads Wikipedia passages for every claim. Loading model..." -ForegroundColor Green
+        try {
+            $body = @{ model = $JudgeModel; keep_alive = '30m'; options = @{ num_ctx = 4096 } } | ConvertTo-Json
+            Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/generate' -Method Post -Body $body -ContentType 'application/json' -TimeoutSec 180 | Out-Null
+        }
+        catch { Write-Warning "Could not preload '$JudgeModel'; the first verification may be slow." }
+    }
+    elseif ($ollamaModels.Count -gt 0) {
+        Write-Host "Evidence judge: off. Run 'ollama pull $JudgeModel' to judge claims against Wikipedia."
+    }
+
     # Claim extraction: an LLM configured in .env wins; otherwise use a local
     # Ollama model when one is running; otherwise the rule-based extractor.
+    # With the judge on, extraction stays rule-based unless -OllamaModel is given,
+    # so a single model fits on the GPU.
+    if ($judgeOn -and -not $PSBoundParameters.ContainsKey('OllamaModel')) { $NoLlm = $true }
     $llmConfigured = -not [string]::IsNullOrWhiteSpace($env:DAM_LLM_URL)
     if (-not $llmConfigured) {
         $llmLine = Select-String -LiteralPath (Join-Path $projectRoot '.env') -Pattern '^\s*DAM_LLM_URL\s*=\s*\S' -Quiet
@@ -162,18 +194,12 @@ try {
     }
     if ($NoLlm) {
         $env:DAM_LLM_URL = ' '  # a blank value overrides any URL in .env
-        Write-Host 'Claim extraction: rule-based (-NoLlm given).'
+        Write-Host 'Claim extraction: rule-based.'
     }
     elseif ($llmConfigured) {
         Write-Host 'Claim extraction: LLM from .env (falls back to rules on any error).' -ForegroundColor Green
     }
     else {
-        $ollamaModels = @()
-        try {
-            $tags = Invoke-RestMethod -Uri 'http://127.0.0.1:11434/api/tags' -TimeoutSec 3
-            $ollamaModels = @($tags.models | ForEach-Object { $_.name } | Where-Object { $_ -notmatch 'embed' })
-        }
-        catch { }
         if ($ollamaModels.Count -eq 0) {
             Write-Host 'Claim extraction: rule-based. Start Ollama (or set DAM_LLM_URL/KEY/MODEL in .env) to use an LLM.'
         }
