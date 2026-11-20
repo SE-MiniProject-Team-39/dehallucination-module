@@ -12,7 +12,7 @@ Both supplied PDFs were read in full; extracted text is retained beside this doc
 | D4 – Software Design Document | [DAM_Software_Design_Document.docx](DAM_Software_Design_Document.docx), [use-case diagram](use-case.png), [TRACEABILITY.md](TRACEABILITY.md) |
 | Sprint 1 – working product, unit/integration tests, CI/CD | GitHub Actions on every push and PR; 1-minute demo [sprint-1.mp4](sprint-1.mp4) |
 | Sprint 2 – system tests, remaining features, docs, freeze | Acceptance suites (PRs #31–#35, #39–#41); 2-minute demo [sprint-2.mp4](sprint-2.mp4) |
-| Final – all test reports incl. code and branch coverage | [TEST_RESULTS.md](TEST_RESULTS.md) (280 tests passing), [COVERAGE.md](COVERAGE.md) (98.8% combined, 96.3% branch), [testing/](../testing/README.md) (32 documented scenarios across 4 levels) |
+| Final – all test reports incl. code and branch coverage | [TEST_RESULTS.md](TEST_RESULTS.md) (315 tests passing), [COVERAGE.md](COVERAGE.md) (96.5% combined, 92.4% branch), [testing/](../testing/README.md) (32 documented scenarios across 4 levels) |
 
 Development is frozen as of this commit; only documentation changes follow.
 
@@ -41,7 +41,7 @@ The local project includes the FastAPI API, React dashboard, four verdict states
 
 ## Deviations and evidence still needed
 
-1. **General verification accuracy:** Offline operation is limited to seven seeded relationships. Live graph reasoning covers three relation templates; Wikipedia support requires a normalized exact sentence match. This is conservative evidence checking, not a general NLI fact-verification model. Broader accuracy needs an evaluated entailment model and labeled benchmark.
+1. **General verification accuracy:** Without a judge model, offline operation is limited to seven seeded relationships, live Wikidata covers three relation templates, and Wikipedia support requires an exact sentence match. With a judge model (PR #47; `qwen2.5:7b` via Ollama by default), any claim is checked against retrieved Wikipedia passages and labelled Supported or Contradicted, with a verbatim, cited quote. It scored 11/11 on a mixed machine-learning and general-knowledge benchmark. Judging is still a model's reading of a passage, not proof: errors are possible when the retrieved passage is off-topic or nuanced. Uncited model knowledge is used only when no cited evidence exists, and always stays flagged for review. A labelled benchmark beyond these tests remains future work.
 
 2. **Claim extraction:** Rules are the default so a demonstration runs without a paid provider. An optional LLM endpoint exists, but no provider credentials or model were supplied. Compound-sentence atomicity and subjective-language filtering remain limited in rule mode. External LLM behavior has been mocked, not live-tested.
 

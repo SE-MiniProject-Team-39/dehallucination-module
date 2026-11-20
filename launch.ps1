@@ -181,6 +181,9 @@ try {
     elseif ($ollamaModels.Count -gt 0) {
         Write-Host "Evidence judge: off. Run 'ollama pull $JudgeModel' to judge claims against Wikipedia."
     }
+    else {
+        Write-Warning "Evidence judge: off because Ollama is not running. Start Ollama to judge any claim against Wikipedia."
+    }
 
     # Claim extraction: an LLM configured in .env wins; otherwise use a local
     # Ollama model when one is running; otherwise the rule-based extractor.

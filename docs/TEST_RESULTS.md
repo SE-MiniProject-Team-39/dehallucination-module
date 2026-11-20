@@ -6,7 +6,8 @@
 | --- | --- |
 | Judge model choice (12 claims, known answers, Wikipedia passages) | `qwen2.5:7b` 11/12; `qwen2.5:3b` 4/12. Model knowledge alone: 7b 11/12, 3b 5/12 |
 | End to end via `launch.cmd` (live, judge `qwen2.5:7b`, rule-based extraction) | 6 ML claims + 5 general claims + 1 opinion: **11/11 verdicts correct**, opinion skipped, 28.8 s. True claims Supported at 0.85 with Wikipedia citations. False claims Contradicted, with Wikipedia corrections (e.g. Canberra; "cannot be seen by the naked human eye from the Moon") |
-| Tests | 9 new judge tests; full suite **315 passed**, coverage 96.5% |
+| Dashboard with judge (`launch.cmd`, Edge) | Unseen claims "Mount Kilimanjaro is the highest mountain in Africa" Supported 85%, with the Wikipedia passage cited as judged by qwen2.5:7b. "The Pacific Ocean is the smallest ocean on Earth" Contradicted. Injection banner shown; no JavaScript errors. 8.6 s |
+| Tests | 9 new judge tests; full suite **315 passed**, coverage 96.5% (97.7% statements, 92.4% branches). Reports regenerated: [coverage.xml](coverage.xml), [test-results.xml](test-results.xml) |
 
 ## Addendum — 20 November 2026: prompt injection and local LLM extraction
 
