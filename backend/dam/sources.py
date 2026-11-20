@@ -9,6 +9,8 @@ from urllib.parse import quote
 
 import httpx
 
+from . import judge
+
 FACTS = json.loads(Path(__file__).with_name("corpus.json").read_text(encoding="utf-8"))
 
 
@@ -109,11 +111,82 @@ class WikidataSource:
                          datetime.now(timezone.utc).isoformat())]
 
 
+STOPWORDS = set("a an the of in on at to for and or is are was were be been by with as that this it its from into than "
+                "all any every can does do did has have had".split())
+
+
+def _content_words(text):
+    return [w for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in STOPWORDS]
+
+
+WIKI_API = "https://en.wikipedia.org/w/api.php"
+
+
+async def retrieve_passages(claim, client, k=3):
+    """Top-k three-sentence windows from the best-matching Wikipedia articles."""
+    found = await client.get(WIKI_API, params={"action": "query", "list": "search", "srsearch": claim[:250],
+                                               "srlimit": 3, "format": "json"})
+    found.raise_for_status()
+    titles = [hit["title"] for hit in found.json().get("query", {}).get("search", [])]
+    if not titles:
+        return []
+    docs = []
+    leads = await client.get(WIKI_API, params={"action": "query", "prop": "extracts", "explaintext": 1, "exintro": 1,
+                                               "exlimit": 3, "titles": "|".join(titles), "redirects": 1, "format": "json"})
+    leads.raise_for_status()
+    docs += [(p.get("pageid"), p.get("extract", "")) for p in leads.json().get("query", {}).get("pages", {}).values()]
+    full = await client.get(WIKI_API, params={"action": "query", "prop": "extracts", "explaintext": 1, "titles": titles[0],
+                                              "redirects": 1, "format": "json"})
+    full.raise_for_status()
+    docs += [(p.get("pageid"), p.get("extract", "")[:60000]) for p in full.json().get("query", {}).get("pages", {}).values()]
+    wanted = set(_content_words(claim))
+    windows = []
+    for pageid, body in docs:
+        if not pageid:
+            continue
+        sentences = [s for s in re.split(r"(?<=[.!?])\s+|\n+", html.unescape(body)) if len(s.split()) > 3]
+        for i in range(len(sentences)):
+            window = " ".join(sentences[i:i + 3])
+            overlap = len(wanted & set(_content_words(window))) / (len(wanted) or 1)
+            windows.append((overlap, pageid, window))
+    windows.sort(key=lambda w: -w[0])
+    chosen, seen = [], set()
+    for overlap, pageid, window in windows:
+        if overlap == 0 or window in seen:
+            continue
+        seen.add(window)
+        chosen.append({"text": window, "url": "https://en.wikipedia.org/?curid=" + str(pageid)})
+        if len(chosen) == k:
+            break
+    return chosen
+
+
 class WikipediaSource:
     name = "wikipedia"
 
+    @property
+    def timeout(self):
+        cfg = judge.config()
+        return cfg["timeout"] + 10 if cfg else None
+
     async def query(self, text, client):
-        result = await client.get("https://en.wikipedia.org/w/api.php", params={
+        cfg = judge.config()
+        if cfg:
+            # Retrieve passages, then let the judge decide whether they support or
+            # contradict the claim. The quote must come from the passages.
+            passages = await retrieve_passages(text, client)
+            if not passages:
+                return []
+            label, quote = await judge.judge_passages(text, passages, client, cfg)
+            if not label:
+                return []
+            source = next((p for p in passages if quote and quote in re.sub(r"\s+", " ", p["text"])), passages[0])
+            item = evidence(self.name, quote or source["text"], source["url"], label,
+                            quote if label == "Contradicted" and quote else None, datetime.now(timezone.utc).isoformat())
+            item["quality"] = 0.85
+            item["judged_by"] = cfg["model"]
+            return [item]
+        result = await client.get(WIKI_API, params={
             "action": "query", "generator": "search", "gsrsearch": text[:250], "gsrlimit": 2,
             "prop": "extracts", "exintro": 1, "explaintext": 1, "format": "json"})
         result.raise_for_status()
@@ -126,9 +199,35 @@ class WikipediaSource:
         return items
 
 
+class ModelKnowledgeSource:
+    """The judge model's own knowledge: uncited, low quality, always flagged for review on its own."""
+    name = "model"
+
+    @property
+    def timeout(self):
+        cfg = judge.config()
+        return cfg["timeout"] + 5 if cfg else None
+
+    async def query(self, text, client):
+        cfg = judge.config()
+        if not cfg:
+            return []
+        label, reason = await judge.judge_knowledge(text, client, cfg)
+        if not label:
+            return []
+        item = evidence(self.name, reason or ("Consistent with" if label == "Supported" else "Inconsistent with") +
+                        " the model's general knowledge.", "llm:" + cfg["model"], label, None,
+                        datetime.now(timezone.utc).isoformat())
+        item["quality"] = 0.45
+        item["uncited"] = True
+        return [item]
+
+
 async def lookup(adapter, text, client, timeout, weight):
     try:
-        items = await asyncio.wait_for(adapter.query(text, client), timeout=timeout)
+        # Judged sources wait for a model, so they get their own (longer) budget.
+        budget = max(timeout, getattr(adapter, "timeout", None) or 0)
+        items = await asyncio.wait_for(adapter.query(text, client), timeout=budget)
         for item in items:
             item['trust_weight'] = weight
         return {"source": adapter.name, "status": "ok", "evidence": items}

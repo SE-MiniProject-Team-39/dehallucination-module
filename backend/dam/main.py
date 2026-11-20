@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from starlette.middleware.sessions import SessionMiddleware
 
+from . import judge
 from .models import ApiKey, Audit, Config, Job, User, database, now
 from .pipeline import Pipeline, summarize
 from .security import check_password, hash_key, hash_password
@@ -57,7 +58,7 @@ class SettingsInput(BaseModel):
     source_timeout: float = Field(default=5, ge=0.1, le=5)
     request_timeout: float = Field(default=15, ge=1, le=30)
     rate_limit: int = Field(default=60, ge=1, le=1000)
-    sources: dict[Literal['curated', 'wikidata', 'wikipedia'], SourceConfig]
+    sources: dict[Literal['curated', 'wikidata', 'wikipedia', 'model'], SourceConfig]
 
 
 class KeyInput(BaseModel):
@@ -81,7 +82,7 @@ def create_app(db_url=None, testing=False):
 
     with sessions() as db:
         if not db.get(Config, 'settings'):
-            db.add(Config(id='settings', value=SettingsInput(sources={name: SourceConfig() for name in ['curated', 'wikidata', 'wikipedia']}).model_dump()))
+            db.add(Config(id='settings', value=SettingsInput(sources={name: SourceConfig() for name in ['curated', 'wikidata', 'wikipedia', 'model']}).model_dump()))
         for username, role in [('admin', 'Administrator'), ('reviewer', 'Reviewer'), ('developer', 'Developer')]:
             password = os.getenv(f'DAM_{username.upper()}_PASSWORD')
             if password and not db.scalar(select(User).where(User.username == username)):
@@ -112,7 +113,10 @@ def create_app(db_url=None, testing=False):
 
     def settings():
         with sessions() as db:
-            return db.get(Config, 'settings').value
+            value = copy.deepcopy(db.get(Config, 'settings').value)
+        # Settings saved before the model-knowledge source existed get its defaults.
+        value['sources'].setdefault('model', SourceConfig().model_dump())
+        return value
 
     def audit(db, actor, action, details):
         db.add(Audit(id=str(uuid4()), actor=actor, action=action, details=details))
@@ -198,7 +202,9 @@ def create_app(db_url=None, testing=False):
         # Extraction has its own timeout (DAM_LLM_TIMEOUT); the request deadline covers evidence gathering.
         extracted = await extract(data.text, data.context)
         try:
-            report = await asyncio.wait_for(pipeline.run(data.text, data.context, config, threshold, extracted=extracted), timeout=config['request_timeout'])
+            # A judge model needs more time than plain lookups; DAM_JUDGE_DEADLINE (default 120 s) applies then.
+            deadline = config['request_timeout'] if not judge.config() else max(config['request_timeout'], float(os.getenv('DAM_JUDGE_DEADLINE', '120')))
+            report = await asyncio.wait_for(pipeline.run(data.text, data.context, config, threshold, extracted=extracted), timeout=deadline)
         except TimeoutError:
             report = summarize({'original_text': data.text, 'extractor': extracted[1] + ' (request timeout)', 'mode': 'live' if live else 'offline snapshot', 'confidence_threshold': threshold,
                 'injection_warnings': detect_injections(data.text),
@@ -299,8 +305,9 @@ def create_app(db_url=None, testing=False):
     async def update_settings(data: SettingsInput, user=Depends(identity)):
         admin(user)
         config = data.model_dump()
-        if set(config['sources']) != {'curated', 'wikidata', 'wikipedia'}:
+        if not {'curated', 'wikidata', 'wikipedia'} <= set(config['sources']):
             raise HTTPException(422, 'Configure all three source adapters')
+        config['sources'].setdefault('model', SourceConfig().model_dump())
         with sessions() as db:
             row = db.get(Config, 'settings')
             audit(db, user['username'], 'settings_changed', {'before': row.value, 'after': config})

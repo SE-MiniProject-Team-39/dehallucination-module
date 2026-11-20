@@ -10,11 +10,18 @@ import httpx
 
 from .extraction import detect_injections, extract
 from .models import Cache, now
-from .sources import CuratedSource, WikidataSource, WikipediaSource, lookup, normalize
+from . import judge
+from .sources import CuratedSource, ModelKnowledgeSource, WikidataSource, WikipediaSource, lookup, normalize
+
+DEFAULT_SOURCE = {'enabled': True, 'weight': 1}
 
 
 def score(results, threshold):
     evidence = [item for result in results for item in result['evidence']]
+    # Uncited model knowledge only counts when no cited source has evidence.
+    cited = [item for item in evidence if not item.get('uncited')]
+    if cited:
+        evidence = cited
     if not evidence:
         verdict = "Not-Checkable" if not results or any(r['status'] != 'ok' for r in results) else "Unsupported"
         return {"verdict": verdict, "confidence_score": 0.0, "flagged": 0 < threshold, "evidence": [], "suggested_correction": None}
@@ -55,12 +62,17 @@ class Pipeline:
         adapters = [CuratedSource(), WikidataSource(self.live)]
         if self.live:
             adapters.append(WikipediaSource())
-        adapters = [a for a in adapters if settings['sources'][a.name]['enabled']]
+        judge_cfg = judge.config()
+        if judge_cfg:
+            adapters.append(ModelKnowledgeSource())
+        source_cfg = {a.name: settings['sources'].get(a.name, DEFAULT_SOURCE) for a in adapters}
+        adapters = [a for a in adapters if source_cfg[a.name]['enabled']]
+        judge_model = judge_cfg['model'] if judge_cfg else None
         async with AsyncExitStack() as stack:
             client = None
             async def process(claim):
                 nonlocal client
-                cache_id = hashlib.sha256(json.dumps([normalize(claim['text']), settings, self.live], sort_keys=True).encode()).hexdigest()
+                cache_id = hashlib.sha256(json.dumps([normalize(claim['text']), settings, self.live, judge_model], sort_keys=True).encode()).hexdigest()
                 with self.sessions() as db:
                     cached = db.get(Cache, cache_id)
                     if cached and (datetime.now(timezone.utc) - datetime.fromisoformat(cached.created_at)).total_seconds() < 86400:
@@ -72,7 +84,7 @@ class Pipeline:
                     async with self.semaphore:
                         if client is None:
                             client = await stack.enter_async_context(httpx.AsyncClient(headers={'User-Agent': 'DAM-University-Project/1.0 (https://github.com/SE-MiniProject-Team-39/dehallucination-module)'}, timeout=settings['source_timeout']))
-                        results = await asyncio.gather(*(lookup(a, claim['text'], client, settings['source_timeout'], settings['sources'][a.name]['weight']) for a in adapters))
+                        results = await asyncio.gather(*(lookup(a, claim['text'], client, settings['source_timeout'], source_cfg[a.name]['weight']) for a in adapters))
                     # Failures are retried rather than cached for a full day.
                     if results and all(r['status'] == 'ok' for r in results):
                         with self.sessions() as db:

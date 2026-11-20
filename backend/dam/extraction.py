@@ -97,7 +97,8 @@ def fallback_extract(text):
             continue
         if re.search(r'\b(best|beautiful|wonderful|favorite|favourite|amazing|should|ought)\b', sentence, re.I):
             continue
-        if re.search(FACT_WORDS, sentence, re.I):
+        # Any remaining declarative statement is checkable; listed verbs are not required.
+        if re.search(FACT_WORDS, sentence, re.I) or len(re.findall(r"[A-Za-z]+", sentence)) >= 4:
             claims.append({"text": sentence, "start": start, "end": end})
     return _without_injections(claims, detect_injections(text))
 
