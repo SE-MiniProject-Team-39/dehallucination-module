@@ -27,7 +27,9 @@ Keep the terminal open and press **Ctrl+C** to stop the server. Server logs are 
 .\launch.cmd -Port 8001
 ```
 
-Optional flags: `-NoBrowser` runs without opening a browser; `-SkipInstall` uses dependencies already installed; `-Check` builds, starts and verifies the app, then stops it. The PowerShell script can also be called directly with `powershell -NoProfile -ExecutionPolicy Bypass -File .\launch.ps1`.
+The launcher checks whether Wikidata and Wikipedia are reachable. If they are, DAM starts in **live** mode and verifies claims against the real sources. If not, it falls back to the offline snapshot and says so. `.env` is not changed. The LLM claim extractor switches on automatically when `DAM_LLM_URL`, `DAM_LLM_KEY` and `DAM_LLM_MODEL` are set in `.env`.
+
+Optional flags: `-Offline` forces the offline snapshot; `-NoBrowser` runs without opening a browser; `-SkipInstall` uses dependencies already installed; `-Check` builds, starts and verifies the app, then stops it. The PowerShell script can also be called directly with `powershell -NoProfile -ExecutionPolicy Bypass -File .\launch.ps1`.
 
 For manual setup instead:
 
