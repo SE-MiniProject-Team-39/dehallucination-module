@@ -194,13 +194,18 @@ def create_app(db_url=None, testing=False):
             raise HTTPException(403, 'source_app_id must match your API key application name')
         config = settings()
         threshold = data.confidence_threshold if data.confidence_threshold is not None else config['confidence_threshold']
+        from .extraction import detect_injections, extract
+        # Extraction has its own timeout (DAM_LLM_TIMEOUT); the request deadline covers evidence gathering.
+        extracted = await extract(data.text, data.context)
         try:
-            report = await asyncio.wait_for(pipeline.run(data.text, data.context, config, threshold), timeout=config['request_timeout'])
+            report = await asyncio.wait_for(pipeline.run(data.text, data.context, config, threshold, extracted=extracted), timeout=config['request_timeout'])
         except TimeoutError:
-            from .extraction import fallback_extract
-            report = summarize({'original_text': data.text, 'extractor': 'rule-based (request timeout)', 'mode': 'live' if live else 'offline snapshot', 'confidence_threshold': threshold,
+            report = summarize({'original_text': data.text, 'extractor': extracted[1] + ' (request timeout)', 'mode': 'live' if live else 'offline snapshot', 'confidence_threshold': threshold,
+                'injection_warnings': detect_injections(data.text),
                 'claims': [{**c, 'claim_id': str(uuid4()), 'verdict': 'Not-Checkable', 'confidence_score': 0.0, 'flagged': 0.0 < threshold,
-                            'evidence': [], 'source_results': [], 'cached': False, 'suggested_correction': None, 'reason': 'Request deadline exceeded'} for c in fallback_extract(data.text)]})
+                            'evidence': [], 'source_results': [], 'cached': False, 'suggested_correction': None, 'reason': 'Request deadline exceeded'} for c in extracted[0]]})
+        if report['extractor'] == 'llm' and os.getenv('DAM_LLM_MODEL'):
+            report['extractor'] = 'llm · ' + os.getenv('DAM_LLM_MODEL')
         for claim in report['claims']:
             claim['automated_verdict'] = claim['verdict']
             claim['automated_confidence_score'] = claim['confidence_score']

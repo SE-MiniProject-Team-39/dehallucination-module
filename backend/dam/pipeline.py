@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import httpx
 
-from .extraction import extract
+from .extraction import detect_injections, extract
 from .models import Cache, now
 from .sources import CuratedSource, WikidataSource, WikipediaSource, lookup, normalize
 
@@ -50,8 +50,8 @@ class Pipeline:
         self.live = live
         self.semaphore = asyncio.Semaphore(12)
 
-    async def run(self, text, context, settings, threshold):
-        claims, extractor = await extract(text, context)
+    async def run(self, text, context, settings, threshold, extracted=None):
+        claims, extractor = extracted if extracted is not None else await extract(text, context)
         adapters = [CuratedSource(), WikidataSource(self.live)]
         if self.live:
             adapters.append(WikipediaSource())
@@ -81,4 +81,5 @@ class Pipeline:
                 return {**claim, "claim_id": str(uuid4()), **score(results, threshold), "source_results": results, "cached": hit}
             checked = await asyncio.gather(*(process(c) for c in claims))
         return summarize({"original_text": text, "claims": checked, "extractor": extractor,
+                          "injection_warnings": detect_injections(text),
                           "mode": "live" if self.live else "offline snapshot", "confidence_threshold": threshold})
