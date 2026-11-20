@@ -9,6 +9,7 @@ A local FastAPI service and React reviewer workspace built from the two supplied
 - **Deliverables index and declared deviations:** [docs/DELIVERY.md](docs/DELIVERY.md)
 - **Architecture:** [system diagram](docs/architecture.png), [pipeline diagram](docs/pipeline.png), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [SAD](docs/DAM_Software_Architecture_Document_SAD.docx), [SDD](docs/DAM_Software_Design_Document.docx)
 - **Testing:** [TEST_PLAN.md](docs/TEST_PLAN.md), [TEST_RESULTS.md](docs/TEST_RESULTS.md) (315 tests passing, browser end-to-end, Docker/PostgreSQL, live sources, LLM evidence judge), [COVERAGE.md](docs/COVERAGE.md) (96.5% combined, 92.4% branch)
+- **Screenshots (diagrams, demo, tests, CI):** [DAM_Screenshots.pdf](docs/DAM_Screenshots.pdf)
 - **Sprint demos:** [Sprint 1](docs/sprint-1.mp4), [Sprint 2](docs/sprint-2.mp4) · **Backlog:** GitHub Project "DAM 1.0 Backlog" (14 stories, 65 points, 2 sprints)
 
 ## Run on Windows
